@@ -10,6 +10,7 @@ public sealed class PlayerController : IDisposable
 {
     private readonly AudioEngine _engine = new();
     private CancellationTokenSource? _loadCts;
+    private bool _jumpToAOnRangeChange = true;
 
     public PlayerController()
     {
@@ -98,10 +99,12 @@ public sealed class PlayerController : IDisposable
         StateChanged?.Invoke();
     }
 
+    /// <summary>Шаговая перемотка (±0,2 / ±1 / ±2): не выводит позицию за пределы фрагмента A–B.</summary>
     public void SeekBy(double deltaSeconds)
     {
         if (!HasTrack) return;
-        SeekTo(PositionController.SeekBy(Position, deltaSeconds, Duration));
+        var target = PositionController.SeekBy(Position, deltaSeconds, Duration);
+        SeekTo(Math.Clamp(target, Range.A, Range.B));
     }
 
     public void SeekTo(double seconds)
@@ -122,7 +125,8 @@ public sealed class PlayerController : IDisposable
     public void SetA()
     {
         if (!HasTrack) return;
-        Range.SetAFromPosition(Position);
+        // Позиция и так становится точкой A — переход не нужен.
+        WithoutJumpToA(() => Range.SetAFromPosition(Position));
     }
 
     public void SetB()
@@ -151,11 +155,55 @@ public sealed class PlayerController : IDisposable
         if (HasTrack) Range.MoveB(seconds);
     }
 
+    /// <summary>
+    /// Выход из цикла: фрагмент становится всем треком (A = 0, B = длительность).
+    /// Границы применяются к аудиопотоку сразу, а позиция не меняется — воспроизведение
+    /// продолжается за прежнюю точку B до конца записи.
+    /// </summary>
+    public void ExitLoop()
+    {
+        if (HasTrack) WithoutJumpToA(Range.ResetToFull);
+    }
+
+    /// <summary>
+    /// После изменения A или B воспроизведение переходит в точку A (Play/Pause сохраняется),
+    /// чтобы новый фрагмент сразу слушался с начала. Исключения оформляются через WithoutJumpToA.
+    /// </summary>
     private void OnRangeChanged()
     {
         _engine.SetLoop(Range.A, Range.B);
         Counter.Reset();
+        if (_jumpToAOnRangeChange) SeekTo(Range.A);
     }
+
+    private void WithoutJumpToA(Action action)
+    {
+        _jumpToAOnRangeChange = false;
+        try { action(); }
+        finally { _jumpToAOnRangeChange = true; }
+    }
+
+    // ---------- Сохранение состояния ----------
+
+    public AppSettings SnapshotSettings() => new()
+    {
+        TrackPath = Track?.Path,
+        A = Range.A,
+        B = Range.B,
+        Position = Position,
+        SpeedSteps = Speed.Steps,
+    };
+
+    /// <summary>Применяет сохранённые A/B, скорость и позицию к уже загруженному треку.</summary>
+    public void RestoreSettings(AppSettings settings)
+    {
+        Speed.Steps = settings.SpeedSteps;
+        if (!HasTrack) return;
+        WithoutJumpToA(() => Range.Restore(settings.A, settings.B));
+        SeekTo(settings.Position);
+    }
+
+    public void ResetCounter() => Counter.Reset();
 
     // ---------- Скорость ----------
 

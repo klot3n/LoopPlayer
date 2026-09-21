@@ -32,14 +32,17 @@ public partial class MainWindow : Window
         _player.Range.Changed += UpdateRange;
         _player.Counter.Changed += UpdateCounter;
 
-        HookSlider(MainSlider, v => _draggingMain = v, v => _player.SeekTo(v));
-        HookSlider(ASlider, v => _draggingA = v, v => _player.MoveA(v));
-        HookSlider(BSlider, v => _draggingB = v, v => _player.MoveB(v));
+        HookSlider(MainSlider, v => _draggingMain = v, v => _player.SeekTo(v), v => PositionText.Text = FormatTime(v));
+        HookSlider(ASlider, v => _draggingA = v, v => _player.MoveA(v),
+            v => ATimeText.Text = FormatTime(Math.Min(v, _player.Range.B)));
+        HookSlider(BSlider, v => _draggingB = v, v => _player.MoveB(v),
+            v => BTimeText.Text = FormatTime(Math.Max(v, _player.Range.A)));
 
         _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(33) };
         _timer.Tick += (_, _) => OnTimerTick();
         _timer.Start();
 
+        Closing += (_, _) => _player.SnapshotSettings().TrySave();
         Closed += (_, _) =>
         {
             _timer.Stop();
@@ -53,12 +56,17 @@ public partial class MainWindow : Window
     // ---------- Слайдеры ----------
 
     /// <summary>
-    /// Слайдер сообщает значение только по действию пользователя: при перетаскивании бегунка
-    /// (по отпусканию) и при клике по шкале. Программные обновления игнорируются.
+    /// Слайдер применяет значение только по действию пользователя: по отпусканию бегунка
+    /// и при клике по шкале. Во время перетаскивания <paramref name="preview"/> показывает
+    /// время под бегунком, чтобы его можно было выставить точно. Программные обновления игнорируются.
     /// </summary>
-    private void HookSlider(Slider slider, Action<bool> setDragging, Action<double> apply)
+    private void HookSlider(Slider slider, Action<bool> setDragging, Action<double> apply, Action<double> preview)
     {
-        slider.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler((_, _) => setDragging(true)));
+        slider.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler((_, _) =>
+        {
+            setDragging(true);
+            preview(slider.Value);
+        }));
         slider.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler((_, _) =>
         {
             setDragging(false);
@@ -67,10 +75,12 @@ public partial class MainWindow : Window
         slider.ValueChanged += (_, e) =>
         {
             if (_updatingSliders) return;
-            // Клик по шкале (IsMoveToPointEnabled) меняет значение без перетаскивания.
-            if (!IsDragging(slider)) apply(e.NewValue);
+            if (IsDragging(slider)) preview(e.NewValue);
+            else apply(e.NewValue); // клик по шкале (IsMoveToPointEnabled)
         };
     }
+
+    private string FormatTime(double seconds) => TimeFormatter.Format(seconds, TimeFormatter.UseHours(_player.Duration));
 
     private bool IsDragging(Slider slider) =>
         ReferenceEquals(slider, MainSlider) ? _draggingMain :
@@ -103,13 +113,15 @@ public partial class MainWindow : Window
         var enabled = hasTrack && !_player.IsLoading;
         var useHours = TimeFormatter.UseHours(_player.Duration);
 
-        foreach (var button in new[]
+        foreach (var button in new ButtonBase[]
                  {
                      SetAButton, AMinus1Button, AMinusSmallButton, APlusSmallButton, APlus1Button,
                      SetBButton, BMinus1Button, BMinusSmallButton, BPlusSmallButton, BPlus1Button,
                      Back2Button, PlayPauseButton, GoToAButton, Forward2Button,
                  })
             button.IsEnabled = enabled;
+        ResetCounterButton.IsEnabled = enabled;
+        ExitLoopButton.IsEnabled = enabled;
 
         MainSlider.IsEnabled = enabled;
         ASlider.IsEnabled = enabled;
@@ -194,6 +206,20 @@ public partial class MainWindow : Window
 
     public Task LoadFileAsync(string path) => _player.LoadTrackAsync(path);
 
+    /// <summary>Восстанавливает последний трек, точки A/B, скорость и позицию из сохранённых настроек.</summary>
+    public async Task RestoreLastSessionAsync()
+    {
+        var settings = AppSettings.TryLoad();
+        if (settings is null) return;
+
+        _player.Speed.Steps = settings.SpeedSteps;
+        if (string.IsNullOrEmpty(settings.TrackPath) || !System.IO.File.Exists(settings.TrackPath)) return;
+
+        await _player.LoadTrackAsync(settings.TrackPath);
+        if (_player.HasTrack && _player.Track!.Path == settings.TrackPath)
+            _player.RestoreSettings(settings);
+    }
+
     // ---------- Обработчики кнопок ----------
 
     private void OpenButton_Click(object sender, RoutedEventArgs e) => OpenFileDialogAndLoad();
@@ -211,6 +237,9 @@ public partial class MainWindow : Window
     private void BMinusSmallButton_Click(object sender, RoutedEventArgs e) => _player.NudgeB(-AbRange.SmallStep);
     private void BPlusSmallButton_Click(object sender, RoutedEventArgs e) => _player.NudgeB(AbRange.SmallStep);
     private void BPlus1Button_Click(object sender, RoutedEventArgs e) => _player.NudgeB(AbRange.LargeStep);
+
+    private void ResetCounterButton_Click(object sender, RoutedEventArgs e) => _player.ResetCounter();
+    private void ExitLoopButton_Click(object sender, RoutedEventArgs e) => _player.ExitLoop();
 
     private void Back2Button_Click(object sender, RoutedEventArgs e) => _player.SeekBy(-PositionController.StepLarge);
     private void PlayPauseButton_Click(object sender, RoutedEventArgs e) => _player.TogglePlayPause();
