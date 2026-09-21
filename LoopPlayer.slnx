@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LoopPlayer/LoopPlayer.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LoopPlayer.Tests/LoopPlayer.Tests.csproj" />
+  </Folder>
+</Solution>
