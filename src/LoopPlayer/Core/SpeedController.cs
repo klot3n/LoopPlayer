@@ -21,6 +21,13 @@ public sealed class SpeedController
 
     public double Speed => _steps * Step;
 
+    /// <summary>Число шагов по 0,025 (20..60) — для сохранения и восстановления.</summary>
+    public int Steps
+    {
+        get => _steps;
+        set => SetSteps(value);
+    }
+
     public bool CanIncrease => _steps < MaxSteps;
     public bool CanDecrease => _steps > MinSteps;
 

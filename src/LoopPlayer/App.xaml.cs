@@ -10,8 +10,9 @@ public partial class App : Application
         var window = new UI.MainWindow();
         window.Show();
 
-        // Файл можно передать аргументом командной строки: LoopPlayer.exe "track.mp3"
-        if (e.Args.Length > 0) _ = window.LoadFileAsync(e.Args[0]);
+        // Файл можно передать аргументом командной строки: LoopPlayer.exe "track.mp3";
+        // иначе восстанавливается последняя сессия.
+        _ = e.Args.Length > 0 ? window.LoadFileAsync(e.Args[0]) : window.RestoreLastSessionAsync();
     }
 
     /// <summary>Последний рубеж: любая необработанная ошибка показывается пользователю, приложение продолжает работать.</summary>

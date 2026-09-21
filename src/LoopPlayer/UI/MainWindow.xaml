@@ -8,11 +8,17 @@
 
     <Window.Resources>
         <!-- Ни один элемент не получает фокус: Space и стрелки всегда достаются плееру. -->
-        <Style TargetType="Button">
+        <Style x:Key="BaseButton" TargetType="ButtonBase">
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="MinWidth" Value="44"/>
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="Margin" Value="3,0"/>
+        </Style>
+        <Style TargetType="Button" BasedOn="{StaticResource BaseButton}"/>
+        <!-- RepeatButton: удержание кнопки повторяет действие -->
+        <Style TargetType="RepeatButton" BasedOn="{StaticResource BaseButton}">
+            <Setter Property="Delay" Value="350"/>
+            <Setter Property="Interval" Value="80"/>
         </Style>
         <Style TargetType="Slider">
             <Setter Property="Focusable" Value="False"/>
@@ -37,8 +43,6 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -56,83 +60,80 @@
                        TextTrimming="CharacterEllipsis" Text="Трек не выбран" Foreground="Gray"/>
             <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <TextBlock Text="Скорость:" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <Button x:Name="SpeedDownButton" Content="−" Click="SpeedDownButton_Click"
-                        ToolTip="Медленнее на 0,025"/>
+                <RepeatButton x:Name="SpeedDownButton" Content="−" Click="SpeedDownButton_Click"
+                        ToolTip="Медленнее на 0,025 (−, удерживайте для повтора)"/>
                 <TextBlock x:Name="SpeedText" Style="{StaticResource TimeLabel}" MinWidth="64" Text="×1,000"/>
-                <Button x:Name="SpeedUpButton" Content="+" Click="SpeedUpButton_Click"
-                        ToolTip="Быстрее на 0,025"/>
+                <RepeatButton x:Name="SpeedUpButton" Content="+" Click="SpeedUpButton_Click"
+                        ToolTip="Быстрее на 0,025 (+, удерживайте для повтора)"/>
             </StackPanel>
         </Grid>
 
-        <!-- Шкала (0) -->
+        <!-- Шкалы 0 / A / B в одной сетке: колонка шкалы общая, поэтому все три совпадают по ширине и положению -->
         <Grid Grid.Row="1" Margin="0,4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock x:Name="PositionText" Grid.Column="0" Style="{StaticResource TimeLabel}" Text="00:00"/>
-            <Slider x:Name="MainSlider" Grid.Column="1" Minimum="0" Maximum="1" Height="28"
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Шкала (0) -->
+            <TextBlock x:Name="PositionText" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4"
+                       Style="{StaticResource TimeLabel}" HorizontalAlignment="Right" Margin="0,0,3,0" Text="00:00"/>
+            <Slider x:Name="MainSlider" Grid.Row="0" Grid.Column="4" Minimum="0" Maximum="1" Height="28" Margin="6,4"
                     ToolTip="Текущая позиция — перетащите бегунок"/>
-            <TextBlock x:Name="DurationText" Grid.Column="2" Style="{StaticResource TimeLabel}" Text="00:00"/>
-        </Grid>
+            <TextBlock x:Name="DurationText" Grid.Row="0" Grid.Column="5" Grid.ColumnSpan="2"
+                       Style="{StaticResource TimeLabel}" HorizontalAlignment="Left" Margin="3,0,0,0" Text="00:00"/>
 
-        <!-- Точка A -->
-        <Grid Grid.Row="2" Margin="0,4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Button x:Name="SetAButton" Grid.Column="0" Content="A" Style="{StaticResource PointButton}"
+            <!-- Точка A -->
+            <Button x:Name="SetAButton" Grid.Row="1" Grid.Column="0" Content="A" Style="{StaticResource PointButton}" Margin="3,4"
                     Click="SetAButton_Click" ToolTip="Установить A = текущая позиция (A)"/>
-            <TextBlock x:Name="ATimeText" Grid.Column="1" Style="{StaticResource TimeLabel}" Text="00:00"/>
-            <Button x:Name="AMinus1Button" Grid.Column="2" Content="−1" Click="AMinus1Button_Click" ToolTip="A назад на 1 сек"/>
-            <Button x:Name="AMinusSmallButton" Grid.Column="3" Content="−0,2" Click="AMinusSmallButton_Click" ToolTip="A назад на 0,2 сек"/>
-            <Slider x:Name="ASlider" Grid.Column="4" Minimum="0" Maximum="1" ToolTip="Положение точки A"/>
-            <Button x:Name="APlusSmallButton" Grid.Column="5" Content="+0,2" Click="APlusSmallButton_Click" ToolTip="A вперёд на 0,2 сек"/>
-            <Button x:Name="APlus1Button" Grid.Column="6" Content="+1" Click="APlus1Button_Click" ToolTip="A вперёд на 1 сек"/>
-        </Grid>
+            <TextBlock x:Name="ATimeText" Grid.Row="1" Grid.Column="1" Style="{StaticResource TimeLabel}" Text="00:00"/>
+            <RepeatButton x:Name="AMinus1Button" Grid.Row="1" Grid.Column="2" Content="−1" Margin="3,4" Click="AMinus1Button_Click" ToolTip="A назад на 1 сек (удерживайте для повтора)"/>
+            <RepeatButton x:Name="AMinusSmallButton" Grid.Row="1" Grid.Column="3" Content="−0,2" Margin="3,4" Click="AMinusSmallButton_Click" ToolTip="A назад на 0,2 сек (удерживайте для повтора)"/>
+            <Slider x:Name="ASlider" Grid.Row="1" Grid.Column="4" Minimum="0" Maximum="1" ToolTip="Положение точки A"/>
+            <RepeatButton x:Name="APlusSmallButton" Grid.Row="1" Grid.Column="5" Content="+0,2" Margin="3,4" Click="APlusSmallButton_Click" ToolTip="A вперёд на 0,2 сек (удерживайте для повтора)"/>
+            <RepeatButton x:Name="APlus1Button" Grid.Row="1" Grid.Column="6" Content="+1" Margin="3,4" Click="APlus1Button_Click" ToolTip="A вперёд на 1 сек (удерживайте для повтора)"/>
 
-        <!-- Точка B -->
-        <Grid Grid.Row="3" Margin="0,4">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Button x:Name="SetBButton" Grid.Column="0" Content="B" Style="{StaticResource PointButton}"
+            <!-- Точка B -->
+            <Button x:Name="SetBButton" Grid.Row="2" Grid.Column="0" Content="B" Style="{StaticResource PointButton}" Margin="3,4"
                     Click="SetBButton_Click" ToolTip="Установить B = текущая позиция (B)"/>
-            <TextBlock x:Name="BTimeText" Grid.Column="1" Style="{StaticResource TimeLabel}" Text="00:00"/>
-            <Button x:Name="BMinus1Button" Grid.Column="2" Content="−1" Click="BMinus1Button_Click" ToolTip="B назад на 1 сек"/>
-            <Button x:Name="BMinusSmallButton" Grid.Column="3" Content="−0,2" Click="BMinusSmallButton_Click" ToolTip="B назад на 0,2 сек"/>
-            <Slider x:Name="BSlider" Grid.Column="4" Minimum="0" Maximum="1" ToolTip="Положение точки B"/>
-            <Button x:Name="BPlusSmallButton" Grid.Column="5" Content="+0,2" Click="BPlusSmallButton_Click" ToolTip="B вперёд на 0,2 сек"/>
-            <Button x:Name="BPlus1Button" Grid.Column="6" Content="+1" Click="BPlus1Button_Click" ToolTip="B вперёд на 1 сек"/>
+            <TextBlock x:Name="BTimeText" Grid.Row="2" Grid.Column="1" Style="{StaticResource TimeLabel}" Text="00:00"/>
+            <RepeatButton x:Name="BMinus1Button" Grid.Row="2" Grid.Column="2" Content="−1" Margin="3,4" Click="BMinus1Button_Click" ToolTip="B назад на 1 сек (удерживайте для повтора)"/>
+            <RepeatButton x:Name="BMinusSmallButton" Grid.Row="2" Grid.Column="3" Content="−0,2" Margin="3,4" Click="BMinusSmallButton_Click" ToolTip="B назад на 0,2 сек (удерживайте для повтора)"/>
+            <Slider x:Name="BSlider" Grid.Row="2" Grid.Column="4" Minimum="0" Maximum="1" ToolTip="Положение точки B"/>
+            <RepeatButton x:Name="BPlusSmallButton" Grid.Row="2" Grid.Column="5" Content="+0,2" Margin="3,4" Click="BPlusSmallButton_Click" ToolTip="B вперёд на 0,2 сек (удерживайте для повтора)"/>
+            <RepeatButton x:Name="BPlus1Button" Grid.Row="2" Grid.Column="6" Content="+1" Margin="3,4" Click="BPlus1Button_Click" ToolTip="B вперёд на 1 сек (удерживайте для повтора)"/>
         </Grid>
 
         <!-- Счётчик -->
-        <TextBlock x:Name="RepeatText" Grid.Row="4" Margin="0,8,0,0" FontSize="16" Text="Повторений: 0"/>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,8,0,0">
+            <TextBlock x:Name="RepeatText" FontSize="16" VerticalAlignment="Center" Text="Повторений: 0"/>
+            <Button x:Name="ResetCounterButton" Content="Сбросить" Margin="12,0,0,0" Click="ResetCounterButton_Click"
+                    ToolTip="Обнулить счётчик повторений (R)"/>
+            <Button x:Name="ExitLoopButton" Content="Выйти из цикла" Margin="12,0,0,0" Click="ExitLoopButton_Click"
+                    ToolTip="A = 0:00, B = конец трека; воспроизведение сразу продолжается до конца записи (Esc)"/>
+        </StackPanel>
 
         <!-- Статус / ошибки -->
-        <TextBlock x:Name="StatusText" Grid.Row="5" Margin="0,6,0,0" Foreground="Gray" TextWrapping="Wrap"
+        <TextBlock x:Name="StatusText" Grid.Row="3" Margin="0,6,0,0" Foreground="Gray" TextWrapping="Wrap"
                    VerticalAlignment="Top" Text=""/>
 
         <!-- Основная панель управления -->
-        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-            <Button x:Name="Back2Button" Content="−2 сек" Click="Back2Button_Click" ToolTip="Назад 2 сек (←)"/>
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+            <RepeatButton x:Name="Back2Button" Content="−2 сек" Click="Back2Button_Click" ToolTip="Назад 2 сек (←, удерживайте для повтора)"/>
             <Button x:Name="PlayPauseButton" Content="▶" MinWidth="70" FontSize="18" Click="PlayPauseButton_Click"
                     ToolTip="Play / Pause (Space)"/>
             <Button x:Name="GoToAButton" Content="Перейти к A" Click="GoToAButton_Click" ToolTip="Перейти к A (Ctrl+Shift+A)"/>
-            <Button x:Name="Forward2Button" Content="+2 сек" Click="Forward2Button_Click" ToolTip="Вперёд 2 сек (→)"/>
+            <RepeatButton x:Name="Forward2Button" Content="+2 сек" Click="Forward2Button_Click" ToolTip="Вперёд 2 сек (→, удерживайте для повтора)"/>
         </StackPanel>
     </Grid>
 </Window>

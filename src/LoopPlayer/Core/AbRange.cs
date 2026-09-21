@@ -25,6 +25,17 @@ public sealed class AbRange
         B = Duration;
     }
 
+    /// <summary>Восстановление сохранённой пары A/B с приведением к допустимому диапазону.</summary>
+    public void Restore(double a, double b)
+    {
+        a = Clamp(a);
+        b = Math.Max(Clamp(b), a);
+        Apply(a, b);
+    }
+
+    /// <summary>Выход из цикла: A = 0, B = длительность (с уведомлением подписчиков).</summary>
+    public void ResetToFull() => Apply(0, Duration);
+
     /// <summary>Кнопка/клавиша A: A = позиция; если она правее B — B подтягивается к A.</summary>
     public void SetAFromPosition(double position)
     {

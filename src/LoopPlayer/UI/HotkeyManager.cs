@@ -45,6 +45,8 @@ public sealed class HotkeyManager
             (Key.Right, ModifierKeys.Control) => Do(() => _player.SeekBy(PositionController.StepMedium)),
 
             (Key.Home, ModifierKeys.None) => Do(_player.GoToStart),
+            (Key.R, ModifierKeys.None) => Do(_player.ResetCounter),
+            (Key.Escape, ModifierKeys.None) => Do(_player.ExitLoop),
 
             (Key.O, ModifierKeys.Control) => Do(_openFile),
             (Key.OemPlus, ModifierKeys.None) or (Key.Add, ModifierKeys.None) => Do(_player.SpeedUp),
