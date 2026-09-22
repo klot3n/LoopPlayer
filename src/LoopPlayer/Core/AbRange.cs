@@ -17,11 +17,9 @@ public sealed class AbRange
 
     public double Length => B - A;
 
-    /// <summary>Сброс под новый трек: A = 0, B = длительность.</summary>
-    public void ResetForDuration(double duration)
+    /// <summary>Сброс: B = длительность.</summary>
+    public void ResetForDuration()
     {
-        Duration = Math.Max(0, duration);
-        A = 0;
         B = Duration;
     }
 
